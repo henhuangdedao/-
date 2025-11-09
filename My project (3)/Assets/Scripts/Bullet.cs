@@ -4,26 +4,44 @@ using UnityEngine;
 
 public class Bullet : MonoBehaviour
 {
-    public Vector2 direction;  
+    public Vector2 direction;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        transform.Translate(direction*Time.deltaTime);
+        transform.Translate(direction * Time.deltaTime * 10f);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // 只销毁障碍物，避免误伤其他物体
-        if (other.CompareTag("obstacle"))
+        //获得石头组件
+        Rock rock = other.GetComponent<Rock>();
+        //如果是大石头则分裂
+        if (rock.Big)
         {
-            Destroy(other.gameObject);  // 销毁石头
-            Destroy(gameObject);         // 同时销毁子弹本身
+            //设置本身为小石头
+            rock.SmallSize();
+            //克隆一个小石头
+            Rock rock2 = Instantiate(rock);
+            //同步位置
+            rock2.transform.position = rock.transform.position;
+           
+           
         }
+        else
+        {
+            //销毁石头
+            Destroy(other.gameObject);   
+        }
+        
+        //销毁子弹
+        Destroy(gameObject);
     }
 }
+

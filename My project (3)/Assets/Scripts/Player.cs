@@ -46,12 +46,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // 只对障碍物做出反应，忽略子弹
-        if (other.CompareTag("obstacle"))
-        {
             SceneManager.LoadScene("SampleScene");
-        }
     }
+    
 }
 
 

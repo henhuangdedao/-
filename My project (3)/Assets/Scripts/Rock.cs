@@ -13,11 +13,29 @@ public class Rock : MonoBehaviour
         Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
         //将向量设置给刚体速度
         GetComponent<Rigidbody2D>().velocity = direction;
+ 
     }
 
+    public bool Big = true;
+    public void BigSize()
+    {
+        Big = true;
+        GetComponent<CircleCollider2D>().radius = 1.41f;
+        transform.Find("SpriteBig").gameObject.SetActive(true);
+        transform.Find("SpriteSmall").gameObject.SetActive(false);
+    }
+
+    public void SmallSize()
+    {
+        Big = false;
+        GetComponent<CircleCollider2D>().radius = 0.7f;
+        transform.Find("SpriteBig").gameObject.SetActive(false);
+        transform.Find("SpriteSmall").gameObject.SetActive(true);
+    }
     // Update is called once per frame
     void Update()
     {
         
     }
+    
 }
