@@ -58,7 +58,7 @@ public class PlayerMovement : MonoBehaviour
 
             gameObject.SetActive(false);
 
-            Game.ReloadScene();
+           Game.ReloadScene();
 
         }
 

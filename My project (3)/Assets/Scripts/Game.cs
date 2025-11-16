@@ -37,7 +37,7 @@ public class Game : MonoBehaviour
         Default.StartCoroutine(DoReloadScene());
     }
 
-    private static IEnumerator DoReloadScene()
+  private static IEnumerator DoReloadScene()
     {
         yield return new WaitForSeconds(2f);
         SceneManager.LoadScene("SampleScene");
