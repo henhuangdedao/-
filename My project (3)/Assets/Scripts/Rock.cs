@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public class Rock : MonoBehaviour
 {
@@ -13,16 +14,32 @@ public class Rock : MonoBehaviour
         Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
         //将向量设置给刚体速度
         GetComponent<Rigidbody2D>().velocity = direction;
- 
+        //设置旋转速度
+        GetComponent<Rigidbody2D>().angularVelocity = 60f;
+
     }
 
+    private void Awake()
+    {
+      mSpriteSize = transform.Find("SpriteBig").GetComponent<SpriteRenderer>().size;
+    }
     public bool Big = true;
+    private Vector2 mSpriteSize;
+    public Vector2 SpriteSize=> mSpriteSize;
+
+    public void PlaySfxRockDestroy()
+    {
+        var sfx = Instantiate(transform.Find("SfxRockDestroy"),null);
+              sfx.transform.position = transform.position;
+              sfx.GetComponent<AudioSource>().Play();
+    }
     public void BigSize()
     {
         Big = true;
         GetComponent<CircleCollider2D>().radius = 1.41f;
         transform.Find("SpriteBig").gameObject.SetActive(true);
         transform.Find("SpriteSmall").gameObject.SetActive(false);
+        mSpriteSize=transform.Find("SpriteBig").GetComponent<SpriteRenderer>().size;
     }
 
     public void SmallSize()
@@ -35,7 +52,9 @@ public class Rock : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        var offsetX = mSpriteSize.x;
+        var offsetY = mSpriteSize.y;
+       ScreenHelper.RepeatScreen(transform,offsetX,offsetY);
     }
     
 }

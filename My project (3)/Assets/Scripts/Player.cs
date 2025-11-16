@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Utility;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        ScreenHelper.RepeatScreen(transform, offsetX: 0, offsetY: 0);
         // 移动逻辑
         Vector2 direction = Vector2.zero;
 
@@ -41,14 +43,28 @@ public class PlayerMovement : MonoBehaviour
             bulletComponent.direction = transform.up;
             //显示子弹
             bullet.gameObject.SetActive(true);
+            //播放开枪音频
+            transform.Find("SfxShoot").GetComponent<AudioSource>().Play();
         }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-            SceneManager.LoadScene("SampleScene");
+        if (other.gameObject.name.StartsWith("Rock"))
+        {
+            var sfx = Instantiate(transform.Find("SfxLose"), null);
+            sfx.transform.position = transform.position;
+            sfx.GetComponent<AudioSource>().Play();
+
+            gameObject.SetActive(false);
+
+            Game.ReloadScene();
+
+        }
+
+
+
     }
-    
 }
 
 
