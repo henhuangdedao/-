@@ -4,10 +4,10 @@ namespace Utility
 {
     public class ScreenHelper
     {
-     public static Vector2 LeftBottomScreenPos=new Vector2(-17.8f,-10);
-     public static Vector2 RightTopScreenPos=new Vector2(17.8f,10);
-     public static float ScreenWorldWidth => RightTopScreenPos.x - LeftBottomScreenPos.x;
-     public static float ScreenWorldHeight => RightTopScreenPos.y - LeftBottomScreenPos.y;
+        public static Vector2 LeftBottomScreenPos=new Vector2(-17.8f,-10);
+        public static Vector2 RightTopScreenPos=new Vector2(17.8f,10);
+        public static float ScreenWorldWidth => RightTopScreenPos.x - LeftBottomScreenPos.x;
+        public static float ScreenWorldHeight => RightTopScreenPos.y - LeftBottomScreenPos.y;
         public static void RepeatScreen(Transform transform, float offsetX, float offsetY)
         {
            

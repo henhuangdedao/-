@@ -5,6 +5,9 @@ using Utility;
 
 public class Rock : MonoBehaviour
 {
+    // 添加音效数组
+    public AudioClip[] destroySounds; // 在Inspector中拖入7个音效文件
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -16,7 +19,6 @@ public class Rock : MonoBehaviour
         GetComponent<Rigidbody2D>().velocity = direction;
         //设置旋转速度
         GetComponent<Rigidbody2D>().angularVelocity = 60f;
-
     }
 
     private void Awake()
@@ -31,8 +33,17 @@ public class Rock : MonoBehaviour
     {
         var sfx = Instantiate(transform.Find("SfxRockDestroy"),null);
               sfx.transform.position = transform.position;
-              sfx.GetComponent<AudioSource>().Play();
+              
+        // 随机选择一个音效播放
+        AudioSource audioSource = sfx.GetComponent<AudioSource>();
+        if (destroySounds != null && destroySounds.Length > 0)
+        {
+            int randomIndex = Random.Range(0, destroySounds.Length);
+            audioSource.clip = destroySounds[randomIndex];
+        }
+        audioSource.Play();
     }
+
     public void BigSize()
     {
         Big = true;
@@ -58,3 +69,4 @@ public class Rock : MonoBehaviour
     }
     
 }
+
