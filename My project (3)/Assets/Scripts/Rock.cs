@@ -7,10 +7,12 @@ public class Rock : MonoBehaviour
 {
     // 添加音效数组
     public AudioClip[] destroySounds; // 在Inspector中拖入7个音效文件
+    [Range(0f, 1f)] public float volume = 1.0f; // 新增音量控制
     
     // Start is called before the first frame update
     void Start()
     {
+        
         //0~360 随机一个角度
         float angle = Random.Range(0f, 360f);
         //将角度转换成向量
@@ -20,7 +22,6 @@ public class Rock : MonoBehaviour
         //设置旋转速度
         GetComponent<Rigidbody2D>().angularVelocity = 60f;
     }
-
     private void Awake()
     {
       mSpriteSize = transform.Find("SpriteBig").GetComponent<SpriteRenderer>().size;
@@ -41,6 +42,7 @@ public class Rock : MonoBehaviour
             int randomIndex = Random.Range(0, destroySounds.Length);
             audioSource.clip = destroySounds[randomIndex];
         }
+        audioSource.volume = volume; // 新增：设置音量
         audioSource.Play();
     }
 
@@ -69,4 +71,3 @@ public class Rock : MonoBehaviour
     }
     
 }
-

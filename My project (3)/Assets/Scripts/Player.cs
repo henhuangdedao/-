@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -7,7 +8,7 @@ public class PlayerMovement : MonoBehaviour
 {
     public float speed = 7f;
     private Rigidbody2D rb;
-    public float fireRate = 0.5f;
+    public float fireRate = 1f;
     private float lastFireTime = 0f;
     private bool ignoreNextClick = false; // 新增：忽略下一次点击
     
@@ -91,16 +92,29 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.name.StartsWith("Rock"))
+        if (other.gameObject.name.StartsWith("Rock")||other.gameObject.name.StartsWith("UFO"))
         {
-            var sfx = Instantiate(transform.Find("SfxLose"), null);
-            sfx.transform.position = transform.position;
-            sfx.GetComponent<AudioSource>().Play();
+            // 播放死亡音频（不受TimeScale影响）
+            PlayDeathSound();
             gameObject.SetActive(false);
-        
-            // 改为显示游戏结束界面
+    
+            // 显示游戏结束界面
             Game.ShowGameOver();
         }
+    }
+
+    void PlayDeathSound()
+    {
+        var sfx = Instantiate(transform.Find("SfxLose"), null);
+        sfx.transform.position = transform.position;
+        AudioSource audioSource = sfx.GetComponent<AudioSource>();
+    
+        // 设置音频不受TimeScale影响
+        audioSource.ignoreListenerPause = true;
+        audioSource.Play();
+    
+        // 音频播放完后销毁
+        Destroy(sfx.gameObject, audioSource.clip.length);
     }
 }
 
