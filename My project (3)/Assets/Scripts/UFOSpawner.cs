@@ -1,114 +1,169 @@
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Utility;
+
+[System.Serializable]
+public class UFOType
+{
+    [Header("UFO类型设置")]
+    public string name;               // 类型名称
+    public Sprite sprite;             // 你的贴图
+    [Tooltip("混响预设选择")]
+    public AudioReverbPreset reverbPreset = AudioReverbPreset.Underwater;
+}
+
 public class UFOSpawner : MonoBehaviour
 {
     [Header("生成设置")]
-    public float spawnInterval = 20f;      // 生成间隔20秒
-    public float startDelay = 5f;          // 开始延迟5秒
-    public float ufoSpeed = 3f;           // UFO飞行速度
+    public float spawnInterval = 20f;
+    public float startDelay = 5f;
+    public float ufoSpeed = 3f;
+    public float edgeOffset = 2f;
+    public float ufoSize = 1f;
     
-    [Header("生成位置")]
-    public float edgeOffset = 2f;          // 屏幕边缘偏移量
+    [Header("UFO类型配置")]
+    [Space(10)]
+    public UFOType[] ufoTypes = new UFOType[]
+    {
+        new UFOType { name = "混响1-黄色UFO", reverbPreset = AudioReverbPreset.Underwater },
+        new UFOType { name = "混响2-紫色UFO", reverbPreset = AudioReverbPreset.Cave },
+        new UFOType { name = "混响3-橙色UFO", reverbPreset = AudioReverbPreset.Arena },
+        new UFOType { name = "混响4-粉色UFO", reverbPreset = AudioReverbPreset.Forest },
+        new UFOType { name = "混响5-白色UFO", reverbPreset = AudioReverbPreset.Psychotic }
+    };
     
-    [Header("UFO外观")]
-    public Sprite ufoSprite;              // UFO图片（可选）
-    public Color ufoColor = Color.white;   // UFO颜色
-    public float ufoSize = 1f;            // UFO大小
+    [Header("音效")]
+    public AudioClip[] effectSounds;
+    [Range(0f, 1f)] public float soundVolume = 0.8f;
+    
+    [Header("效果参数")]
+    public float effectDuration = 10f;
+    [Range(-10000f, 0f)] public float dryLevel = -1000f;
+    [Range(-10000f, 2000f)] public float room = 500f;
+    
+    private int lastUFOIndex = -1;
     
     void Start()
     {
-        // 开始生成
-        InvokeRepeating(nameof(SpawnUFO), startDelay, spawnInterval);
-        Debug.Log($"🛸 UFO生成器启动：{startDelay}秒后开始生成");
+        Debug.Log($"🛸 UFO生成器启动");
+        StartCoroutine(SpawnUFOCoroutine());
+    }
+    
+    IEnumerator SpawnUFOCoroutine()
+    {
+        yield return new WaitForSeconds(startDelay);
+        
+        while (true)
+        {
+            SpawnUFO();
+            yield return new WaitForSeconds(spawnInterval);
+        }
     }
     
     private void SpawnUFO()
     {
-        Vector2 spawnPosition = GetScreenEdgeSpawnPosition();
-        GameObject newUFO = CreateUFOFromCode(spawnPosition);
-        
-        Debug.Log($"🛸 UFO生成成功！位置：{spawnPosition}");
+        try
+        {
+            Vector2 spawnPosition = GetScreenEdgeSpawnPosition();
+            int nextUFOIndex = GetRandomIndexExcludingLast();
+            GameObject newUFO = CreateUFOFromCode(spawnPosition, nextUFOIndex);
+            
+            Debug.Log($"✅ 生成: {ufoTypes[nextUFOIndex].name}");
+            lastUFOIndex = nextUFOIndex;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"❌ 生成失败: {e.Message}");
+        }
     }
     
-    private Vector2 GetScreenEdgeSpawnPosition()
+    private int GetRandomIndexExcludingLast()
     {
-        // 随机选择从左侧或右侧生成
-        bool fromRight = Random.Range(0, 2) == 1;
-        
-        float spawnX = fromRight ? 
-            ScreenHelper.RightTopScreenPos.x + edgeOffset :    // 右侧外
-            ScreenHelper.LeftBottomScreenPos.x - edgeOffset;    // 左侧外
-        
-        // 随机Y坐标
-        float spawnY = Random.Range(
-            ScreenHelper.LeftBottomScreenPos.y + edgeOffset,
-            ScreenHelper.RightTopScreenPos.y - edgeOffset
-        );
-        
-        return new Vector2(spawnX, spawnY);
+        List<int> availableIndices = new List<int>();
+        for (int i = 0; i < ufoTypes.Length; i++)
+        {
+            if (i != lastUFOIndex) availableIndices.Add(i);
+        }
+        return availableIndices.Count == 0 ? Random.Range(0, ufoTypes.Length) : availableIndices[Random.Range(0, availableIndices.Count)];
     }
     
-    // 🆕 代码创建UFO对象（不依赖预制件）
-    private GameObject CreateUFOFromCode(Vector2 position)
+    private GameObject CreateUFOFromCode(Vector2 position, int typeIndex)
     {
-        // 1. 创建UFO游戏对象
-        GameObject ufo = new GameObject("UFO");
+        UFOType ufoType = ufoTypes[typeIndex];
+        
+        GameObject ufo = new GameObject(ufoType.name);
         ufo.transform.position = position;
         ufo.transform.localScale = Vector3.one * ufoSize;
         
-        // 2. 添加SpriteRenderer（显示图像）
+        // 只使用你的贴图
         SpriteRenderer spriteRenderer = ufo.AddComponent<SpriteRenderer>();
-        if (ufoSprite != null)
+        if (ufoType.sprite != null)
         {
-            spriteRenderer.sprite = ufoSprite;
-            spriteRenderer.color = ufoColor;
+            spriteRenderer.sprite = ufoType.sprite;
         }
         else
         {
-            // 如果没有图片，创建一个默认图形
-            spriteRenderer.color = Color.cyan;
-            // 可以在这里添加代码生成基本形状
+            Debug.LogWarning($"⚠️ {ufoType.name}贴图缺失");
         }
         
-        // 3. 添加刚体（物理）
+        // 物理组件
         Rigidbody2D rb = ufo.AddComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         
-        // 4. 添加碰撞体
         CircleCollider2D collider = ufo.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
         collider.radius = 0.5f;
         
-        // 5. 🆕 添加UFO脚本组件
+        // UFO脚本
         UFO ufoScript = ufo.AddComponent<UFO>();
-        
-        // 6. 设置飞行方向（朝向屏幕中央）
-        Vector2 screenCenter = Vector2.zero;
-        Vector2 direction = (screenCenter - position).normalized;
-        
-        // 7. 配置UFO参数
-        ufoScript.direction = direction;
+        ufoScript.direction = (Vector2.zero - position).normalized;
         ufoScript.speed = ufoSpeed;
+        ufoScript.ufoType = typeIndex;
+        ufoScript.effectDuration = effectDuration;
+        ufoScript.dryLevel = dryLevel;
+        ufoScript.room = room;
+        ufoScript.effectSounds = effectSounds;
+        ufoScript.soundVolume = soundVolume;
         
         return ufo;
     }
     
-    // 手动生成测试
-    public void SpawnUFOForTest()
+    private Vector2 GetScreenEdgeSpawnPosition()
     {
-        SpawnUFO();
+        Vector2 leftBottom = new Vector2(-10f, -6f);
+        Vector2 rightTop = new Vector2(10f, 6f);
+        
+        try
+        {
+            if (ScreenHelper.LeftBottomScreenPos != Vector2.zero)
+            {
+                leftBottom = ScreenHelper.LeftBottomScreenPos;
+                rightTop = ScreenHelper.RightTopScreenPos;
+            }
+        }
+        catch
+        {
+            Debug.LogWarning("⚠️ 使用默认坐标");
+        }
+        
+        bool fromRight = Random.Range(0, 2) == 1;
+        
+        float spawnX = fromRight ? 
+            rightTop.x + edgeOffset : 
+            leftBottom.x - edgeOffset;
+        
+        float spawnY = Random.Range(leftBottom.y + edgeOffset, rightTop.y - edgeOffset);
+        
+        return new Vector2(spawnX, spawnY);
     }
     
     void Update()
     {
-        // 按G键手动生成UFO（测试用）
-        if (Input.GetKeyDown(KeyCode.G))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            SpawnUFOForTest();
-            Debug.Log("🎮 手动生成UFO");
+            SpawnUFO();
         }
     }
 }

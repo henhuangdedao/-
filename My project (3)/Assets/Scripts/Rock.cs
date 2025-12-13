@@ -1,73 +1,47 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 
 public class Rock : MonoBehaviour
 {
-    // 添加音效数组
-    public AudioClip[] destroySounds; // 在Inspector中拖入7个音效文件
-    [Range(0f, 1f)] public float volume = 1.0f; // 新增音量控制
+    public AudioClip[] destroySounds;
+    [Range(0f, 1f)] public float volume = 1.0f;
     
-    // Start is called before the first frame update
+    private Vector2 spriteSize;
+
     void Start()
     {
-        
-        //0~360 随机一个角度
+        // 随机运动
         float angle = Random.Range(0f, 360f);
-        //将角度转换成向量
         Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
-        //将向量设置给刚体速度
         GetComponent<Rigidbody2D>().velocity = direction;
-        //设置旋转速度
         GetComponent<Rigidbody2D>().angularVelocity = 60f;
     }
-    private void Awake()
+    
+    void Awake()
     {
-      mSpriteSize = transform.Find("SpriteBig").GetComponent<SpriteRenderer>().size;
+        // 确保使用小石头
+        spriteSize = transform.Find("SpriteSmall").GetComponent<SpriteRenderer>().size;
+        GetComponent<CircleCollider2D>().radius = 0.7f;
     }
-    public bool Big = true;
-    private Vector2 mSpriteSize;
-    public Vector2 SpriteSize=> mSpriteSize;
 
     public void PlaySfxRockDestroy()
     {
-        var sfx = Instantiate(transform.Find("SfxRockDestroy"),null);
-              sfx.transform.position = transform.position;
-              
-        // 随机选择一个音效播放
+        var sfx = Instantiate(transform.Find("SfxRockDestroy"), null);
+        sfx.transform.position = transform.position;
+        
         AudioSource audioSource = sfx.GetComponent<AudioSource>();
         if (destroySounds != null && destroySounds.Length > 0)
         {
             int randomIndex = Random.Range(0, destroySounds.Length);
             audioSource.clip = destroySounds[randomIndex];
         }
-        audioSource.volume = volume; // 新增：设置音量
+        audioSource.volume = volume;
         audioSource.Play();
     }
 
-    public void BigSize()
-    {
-        Big = true;
-        GetComponent<CircleCollider2D>().radius = 1.41f;
-        transform.Find("SpriteBig").gameObject.SetActive(true);
-        transform.Find("SpriteSmall").gameObject.SetActive(false);
-        mSpriteSize=transform.Find("SpriteBig").GetComponent<SpriteRenderer>().size;
-    }
-
-    public void SmallSize()
-    {
-        Big = false;
-        GetComponent<CircleCollider2D>().radius = 0.7f;
-        transform.Find("SpriteBig").gameObject.SetActive(false);
-        transform.Find("SpriteSmall").gameObject.SetActive(true);
-    }
-    // Update is called once per frame
     void Update()
     {
-        var offsetX = mSpriteSize.x;
-        var offsetY = mSpriteSize.y;
-       ScreenHelper.RepeatScreen(transform,offsetX,offsetY);
+        // 屏幕循环
+        ScreenHelper.RepeatScreen(transform, spriteSize.x, spriteSize.y);
     }
-    
 }

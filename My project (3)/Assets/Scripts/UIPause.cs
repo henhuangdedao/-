@@ -1,11 +1,16 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 public class UIPause : MonoBehaviour
 {
     private GameObject uiPausePanel;
     private bool isPaused = false;
+    
+    [Header("淡入设置")]
+    public float fadeInTime = 0.5f; // 主页的淡入时间
+    public bool enableFadeEffect = true; // 是否启用淡入效果
     
     void Start()
     {
@@ -17,17 +22,13 @@ public class UIPause : MonoBehaviour
         }
         
         uiPausePanel.SetActive(false);
-        
-        // 自动绑定按钮事件
         BindButtonEvents();
     }
     
     void BindButtonEvents()
     {
-        // 方法1：通过UIPause面板查找子对象
         if (uiPausePanel != null)
         {
-            // 在UIPause面板下查找按钮
             Transform btnResumeTransform = uiPausePanel.transform.Find("BtnResume");
             Transform btnHomeTransform = uiPausePanel.transform.Find("BtnHome");
             
@@ -40,10 +41,6 @@ public class UIPause : MonoBehaviour
                     Debug.Log("继续按钮事件绑定成功！");
                 }
             }
-            else
-            {
-                Debug.LogError("在UIPause下找不到BtnResume按钮！");
-            }
             
             if (btnHomeTransform != null)
             {
@@ -53,10 +50,6 @@ public class UIPause : MonoBehaviour
                     btnHome.onClick.AddListener(OnHomeClick);
                     Debug.Log("主页按钮事件绑定成功！");
                 }
-            }
-            else
-            {
-                Debug.LogError("在UIPause下找不到BtnHome按钮！");
             }
         }
     }
@@ -68,7 +61,6 @@ public class UIPause : MonoBehaviour
             TogglePause();
         }
     }
-
     
     void TogglePause()
     {
@@ -77,8 +69,6 @@ public class UIPause : MonoBehaviour
         isPaused = !isPaused;
         uiPausePanel.SetActive(isPaused);
         Time.timeScale = isPaused ? 0f : 1f;
-    
-        // 简单方法：暂停所有AudioListener
         AudioListener.pause = isPaused;
     }
 
@@ -87,14 +77,20 @@ public class UIPause : MonoBehaviour
         Time.timeScale = 1f;
         isPaused = false;
         uiPausePanel.SetActive(false);
-        AudioListener.pause = false; // 恢复所有声音
+        AudioListener.pause = false;
     }
     
     public void OnHomeClick()
     {
         Debug.Log("返回主页按钮被点击");
+        
+        // 恢复游戏状态
         Time.timeScale = 1f;
+        isPaused = false;
+        uiPausePanel.SetActive(false);
+        AudioListener.pause = false;
+        
+        // 直接加载主页场景（Home场景会处理自己的淡入效果）
         SceneManager.LoadScene("Home");
     }
-    
 }
