@@ -3,14 +3,15 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
 
+
 public class UIPause : MonoBehaviour
 {
     private GameObject uiPausePanel;
     private bool isPaused = false;
     
     [Header("淡入设置")]
-    public float fadeInTime = 0.5f; // 主页的淡入时间
-    public bool enableFadeEffect = true; // 是否启用淡入效果
+    public float fadeInTime = 0.5f;
+    public bool enableFadeEffect = true;
     
     void Start()
     {
@@ -84,13 +85,49 @@ public class UIPause : MonoBehaviour
     {
         Debug.Log("返回主页按钮被点击");
         
-        // 恢复游戏状态
+        // 1. 恢复游戏状态
         Time.timeScale = 1f;
         isPaused = false;
         uiPausePanel.SetActive(false);
         AudioListener.pause = false;
         
-        // 直接加载主页场景（Home场景会处理自己的淡入效果）
+        // 2. 🆕 重置AudioManager到默认音效
+        ResetAudioManager();
+        
+        // 3. 🆕 重置背景到默认
+        ResetBackground();
+        
+        // 4. 直接加载主页场景
         SceneManager.LoadScene("Home");
+    }
+    
+    // 🆕 重置AudioManager
+    void ResetAudioManager()
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.ResetToDefault();
+            Debug.Log("✅ 重置AudioManager为默认音效");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ AudioManager.Instance为null，无法重置");
+        }
+    }
+    
+    // 🆕 重置背景
+    void ResetBackground()
+    {
+        // 查找背景管理器
+        ShaderBackgroundManager bgManager = FindObjectOfType<ShaderBackgroundManager>();
+        if (bgManager != null)
+        {
+            bgManager.ResetToDefault();
+            Debug.Log("✅ 重置背景为默认");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ 找不到ShaderBackgroundManager");
+        }
     }
 }

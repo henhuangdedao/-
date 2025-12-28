@@ -18,13 +18,15 @@ public class Bullet : MonoBehaviour
     
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.name.StartsWith("UFO"))
+        // 🆕 用标签检测UFO
+        if (other.CompareTag("UFO"))
         {
             Destroy(other.gameObject);
             Game.AddScore(100);
             Destroy(gameObject);
         }
 
+        // 石头保持用名字检测
         if (other.gameObject.name.StartsWith("Rock"))
         {
             Rock rock = other.GetComponent<Rock>();

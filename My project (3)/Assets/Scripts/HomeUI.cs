@@ -2,92 +2,189 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.EventSystems;
 
 
 public class HomeUI : MonoBehaviour
 {
+    [Header("UI元素")]
+    public RectTransform guideImage;
+    
+    [Header("动画设置")]
+    public float moveDownTime = 1f;
+    public float moveUpTime = 1f;
+    
     [Header("场景设置")]
-    public string instructionsSceneName = "InstructionsScene"; // Instructions场景名
-    public float fadeOutTime = 0.5f; // 淡出时间
+    public string gameSceneName = "Game";
+    
+    private bool isTransitioning = false;
+    private Canvas guideCanvas;
+    private GameObject homeEventSystem;
     
     void Start()
     {
-        // 查找开始按钮
-        Button btnStart = FindStartButton();
-        if (btnStart != null)
+        // 确保自己不销毁
+        DontDestroyOnLoad(gameObject);
+        
+        if (guideImage != null)
         {
-            btnStart.onClick.AddListener(OnStartButtonClick);
-            Debug.Log("✅ 开始按钮事件绑定成功！");
+            guideCanvas = guideImage.GetComponentInParent<Canvas>();
+            if (guideCanvas != null)
+            {
+                DontDestroyOnLoad(guideCanvas.gameObject);
+                guideCanvas.sortingOrder = 999;
+            }
+            
+            guideImage.anchoredPosition = new Vector2(0, 1080f);
         }
-        else
-        {
-            Debug.LogError("❌ 找不到开始按钮！");
-        }
+        
+        // 记录Home场景的EventSystem
+        homeEventSystem = GameObject.Find("EventSystem");
     }
     
-    Button FindStartButton()
+    public void StartGameTransition()
     {
-        // 方法1：通过transform.Find查找
-        Transform btnTransform = transform.Find("BtnStart");
-        if (btnTransform == null)
-        {
-            // 方法2：通过GameObject.Find查找
-            GameObject btnObj = GameObject.Find("BtnStart");
-            if (btnObj != null) btnTransform = btnObj.transform;
-        }
-        if (btnTransform == null)
-        {
-            // 方法3：通过标签查找
-            GameObject btnObj = GameObject.FindGameObjectWithTag("StartButton");
-            if (btnObj != null) btnTransform = btnObj.transform;
-        }
+        if (isTransitioning || guideImage == null) return;
         
-        return btnTransform?.GetComponent<Button>();
+        StartCoroutine(GameTransitionCoroutine());
     }
     
-    void OnStartButtonClick()
+    IEnumerator GameTransitionCoroutine()
     {
-        Debug.Log("🚀 开始游戏！加载Instructions场景");
+        isTransitioning = true;
         
-        // 禁用按钮防止重复点击
-        Button btnStart = FindStartButton();
-        if (btnStart != null) btnStart.interactable = false;
+        Debug.Log("🚀 开始游戏过渡");
         
-        // 添加淡出效果并加载Instructions场景
-        StartCoroutine(FadeOutAndLoadInstructions());
-    }
-    
-    IEnumerator FadeOutAndLoadInstructions()
-    {
-        // 获取或添加CanvasGroup
-        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup == null)
+        // 1. 下移Guide
+        yield return StartCoroutine(MoveGuide(1080f, 0f, moveDownTime));
+        
+        Debug.Log("✅ Guide下移完成，等待空格键");
+        
+        // 2. 等待空格键
+        while (!Input.GetKeyDown(KeyCode.Space))
         {
-            canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        }
-        
-        // 淡出效果
-        float timer = 0f;
-        while (timer < fadeOutTime)
-        {
-            timer += Time.deltaTime;
-            canvasGroup.alpha = Mathf.Lerp(1f, 0f, timer / fadeOutTime);
             yield return null;
         }
         
-        canvasGroup.alpha = 0f;
+        Debug.Log("🎮 空格键按下，准备切换");
         
-        // 加载Instructions场景
-        SceneManager.LoadScene("Instruction");
+        // 3. 🎯 隐藏Home场景
+        HideHomeSceneCompletely();
+        
+        // 4. 🎯 销毁Home的EventSystem
+        if (homeEventSystem != null)
+        {
+            Destroy(homeEventSystem);
+            homeEventSystem = null;
+            Debug.Log("✅ 销毁Home EventSystem");
+        }
+        
+        // 5. 等待一帧
+        yield return null;
+        
+        // 6. 加载Game场景
+        SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
+        
+        // 7. 等待场景加载
+        yield return null;
+        
+        // 8. 🎯 确保只有一个EventSystem
+        CleanupDuplicateEventSystems();
+        
+        // 9. 上移Guide
+        Debug.Log("⬆️ 开始上移Guide");
+        yield return StartCoroutine(MoveGuide(0f, 1080f, moveUpTime));
+        
+        Debug.Log("🎉 过渡完成！");
+        
+        isTransitioning = false;
     }
     
-    // 可选：添加键盘快捷键
+    // 🎯 清理重复的EventSystem
+    void CleanupDuplicateEventSystems()
+    {
+        EventSystem[] eventSystems = FindObjectsOfType<EventSystem>();
+        
+        if (eventSystems.Length > 1)
+        {
+            Debug.LogWarning($"发现{eventSystems.Length}个EventSystem，清理中...");
+            
+            // 保留第一个，销毁其他的
+            for (int i = 1; i < eventSystems.Length; i++)
+            {
+                Destroy(eventSystems[i].gameObject);
+            }
+            
+            Debug.Log($"✅ 清理完成，保留1个EventSystem");
+        }
+        else if (eventSystems.Length == 0)
+        {
+            Debug.Log("⚠️ 没有EventSystem，正在创建...");
+            CreateEventSystem();
+        }
+    }
+    
+    // 🎯 创建EventSystem
+    void CreateEventSystem()
+    {
+        GameObject eventSystemObj = new GameObject("EventSystem");
+        eventSystemObj.AddComponent<EventSystem>();
+        eventSystemObj.AddComponent<StandaloneInputModule>();
+        DontDestroyOnLoad(eventSystemObj);
+        Debug.Log("✅ 创建了新的EventSystem");
+    }
+    
+    // 🎯 隐藏Home场景
+    void HideHomeSceneCompletely()
+    {
+        // 禁用Parallax
+        Parallax[] parallaxScripts = FindObjectsOfType<Parallax>();
+        foreach (Parallax parallax in parallaxScripts)
+        {
+            parallax.enabled = false;
+            if (parallax.TryGetComponent<Renderer>(out var renderer))
+            {
+                renderer.enabled = false;
+            }
+        }
+        
+        // 隐藏不是GuideCanvas的Canvas
+        Canvas[] allCanvases = FindObjectsOfType<Canvas>();
+        foreach (Canvas canvas in allCanvases)
+        {
+            if (canvas == guideCanvas) continue;
+            canvas.gameObject.SetActive(false);
+        }
+        
+        Debug.Log("✅ Home场景已隐藏");
+    }
+    
+    IEnumerator MoveGuide(float fromY, float toY, float duration)
+    {
+        if (guideImage == null) yield break;
+        
+        float timer = 0f;
+        Vector2 startPos = new Vector2(0, fromY);
+        Vector2 endPos = new Vector2(0, toY);
+        
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            float t = timer / duration;
+            t = Mathf.SmoothStep(0, 1, t);
+            
+            guideImage.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
+            yield return null;
+        }
+        
+        guideImage.anchoredPosition = endPos;
+    }
+    
     void Update()
     {
-        // 按回车键也可以开始游戏
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Return))
         {
-            OnStartButtonClick();
+            StartGameTransition();
         }
     }
 }

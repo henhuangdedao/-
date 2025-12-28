@@ -1,12 +1,16 @@
+using System.Collections;
 using UnityEngine;
 using Utility;
 
+
 public class Rock : MonoBehaviour
 {
-    public AudioClip[] destroySounds;
     [Range(0f, 1f)] public float volume = 1.0f;
+    [Header("销毁设置")]
+    public float destroyDelay = 0.5f;  // 🆕 延迟销毁时间
     
     private Vector2 spriteSize;
+    private bool isDestroyed = false;  // 🆕 防止重复调用
 
     void Start()
     {
@@ -26,22 +30,77 @@ public class Rock : MonoBehaviour
 
     public void PlaySfxRockDestroy()
     {
+        if (isDestroyed) return;  // 🆕 防止重复调用
+        isDestroyed = true;
+        
+        Debug.Log("💥 石头被击中，开始销毁流程");
+        
+        // 1. 播放音效
+        PlayDestroySound();
+        
+        // 2. 禁用碰撞和渲染
+        DisableRock();
+        
+        // 3. 🆕 延迟销毁
+        StartCoroutine(DelayedDestroy());
+    }
+    
+    void PlayDestroySound()
+    {
         var sfx = Instantiate(transform.Find("SfxRockDestroy"), null);
         sfx.transform.position = transform.position;
         
         AudioSource audioSource = sfx.GetComponent<AudioSource>();
-        if (destroySounds != null && destroySounds.Length > 0)
+        
+        if (AudioManager.Instance != null)
         {
-            int randomIndex = Random.Range(0, destroySounds.Length);
-            audioSource.clip = destroySounds[randomIndex];
+            AudioClip clip = AudioManager.Instance.GetRandomSound();
+            
+            if (clip != null)
+            {
+                audioSource.clip = clip;
+                audioSource.volume = volume;
+                audioSource.Play();
+                Debug.Log($"🔊 播放音效: {clip.name}");
+                
+                // 🆕 音效播放完后销毁音效对象
+                Destroy(sfx, clip.length + 0.1f);
+            }
         }
-        audioSource.volume = volume;
-        audioSource.Play();
+    }
+    
+    void DisableRock()
+    {
+        // 禁用碰撞
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+        
+        // 禁用渲染
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null) sr.enabled = false;
+        
+        // 停止物理
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null) rb.velocity = Vector2.zero;
+        
+        Debug.Log("✅ 石头已禁用");
+    }
+    
+    IEnumerator DelayedDestroy()
+    {
+        // 🆕 等待指定时间
+        yield return new WaitForSeconds(destroyDelay);
+        
+        // 销毁石头
+        Destroy(gameObject);
+        Debug.Log("🗑️ 石头已销毁");
     }
 
     void Update()
     {
-        // 屏幕循环
-        ScreenHelper.RepeatScreen(transform, spriteSize.x, spriteSize.y);
+        if (!isDestroyed)  // 🆕 只有没被摧毁时才更新
+        {
+            ScreenHelper.RepeatScreen(transform, spriteSize.x, spriteSize.y);
+        }
     }
 }
